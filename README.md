@@ -6,7 +6,6 @@ TO DO:
 - start & finish client implementation
 - add PGP encryption
 - done
--
 
 ## Current Build
 
