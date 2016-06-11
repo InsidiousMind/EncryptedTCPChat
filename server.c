@@ -124,10 +124,31 @@ int init_server(){
 
 }
 
-int sendmesg(char *msg){
+//sometimes not all of the data sends >.< ....
+int sendall(int s, char *buf, int *len){
+  int total = 0;
+  int bytesleft = *len;
+  int n;
   
+  while(total < *len){
+    n = send(s, buf+total, bytesleft, 0);
+    if(n==-1) break; //means send failed
+    total += n; //tally up what was sent
+    bytesleft -= n; //bytes left to send
+  }
+
+  *len = total; //number actually sent
+
+  return n == -1? -1:0; //return -1 on failure, 0 on success
+
+  }
+
+
+int sendmesg(char *msg){
+  int len = strlen(msg); 
+
   if (!fork()) {
-    if (send(new_fd, msg, (strlen(msg)+2),0) == -1){
+    if (sendall(new_fd, msg, &len) == -1){
       perror("[!!!] could not send");
       return -1;
     }
