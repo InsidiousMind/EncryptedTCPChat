@@ -15,6 +15,7 @@ void setuser(char *buf){
 }
 
 int mainthread(){
+ 
  char *msg; 
  
  

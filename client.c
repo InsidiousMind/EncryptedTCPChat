@@ -17,11 +17,16 @@
 int ret = 0;
 int ret1 = 1;
 int ret2 = 2;
-char *hostname;
+char *hostname, *username;
 int sockfd, numbytes;
+char buf[MAXDATASIZE];
+
 
 void sethost(char *buf){
   hostname = buf;
+}
+void setcuser(char *buf){
+  username = buf; 
 }
 
 void *get_in_addrc(struct sockaddr *sa){
@@ -34,7 +39,6 @@ void *get_in_addrc(struct sockaddr *sa){
 }
 
 int initclient(char *hostname){
-  char buf[MAXDATASIZE];
   struct addrinfo hints, *servinfo, *p;
   int rv;
   char s[INET6_ADDRSTRLEN];
@@ -80,19 +84,17 @@ int initclient(char *hostname){
 
     break;
   }
-    while(1){
-    if((numbytes = recv(sockfd, buf, MAXDATASIZE-1,0)) == -1){
-      perror("[!!][client] error receiving info");
-      pthread_exit(&ret1);
-    }
-
-    buf[numbytes] = '\0';
-
-    printf("[client] received '%s'\n",buf);
-
-    }
 
   return 0;
+
+}
+int receivmsg(){
+  if((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1){
+    perror("[!!][client] error receiving message");
+    pthread_exit(&ret1);
+  }
+  buf[numbytes] = '\0';
+  printf("%s%s%s", username, " ", buf );
 
 }
 void *initclientptr(){

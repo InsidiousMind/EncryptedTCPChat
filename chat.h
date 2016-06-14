@@ -15,6 +15,7 @@ void killout();
 void *initclientptr();
 void sethost(char *buf);
 void killinc();
+void setcuser(char *buf);
 
 //mainthread
 void *mainthreadptr();

@@ -19,13 +19,18 @@ int main(int argc, char *argv[]){
     setuser(argv[2]);  
   }else{
     sethost(argv[1]);
+    setuser("default");
   }
 
 pthread_t tid1, tid2;
 
 pthread_create(&tid1, NULL, mainthreadptr, NULL);
+sleep(1);
 pthread_create(&tid2, NULL, initclientptr, NULL);
 
+printf("Closing Connection...\n");
+
+sleep(5);
 
 pthread_join(tid1,NULL);
 pthread_join(tid2,NULL);
