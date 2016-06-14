@@ -24,6 +24,11 @@ struct sigaction sa;
 int yes=1;
 char s[INET6_ADDRSTRLEN];
 int rv;
+char *msg;
+
+void setmsg(char *buf){
+  msg = buf;
+}
 
 
 void sigchild_handler(int s){
@@ -132,7 +137,9 @@ int sendall(int s, char *buf, int *len){
   
   while(total < *len){
     n = send(s, buf+total, bytesleft, 0);
-    if(n==-1) break; //means send failed
+    if(n==-1){
+      perror("[!!!] could not send");
+      break;} //means send failed
     total += n; //tally up what was sent
     bytesleft -= n; //bytes left to send
   }
@@ -140,12 +147,11 @@ int sendall(int s, char *buf, int *len){
   *len = total; //number actually sent
 
   return n == -1? -1:0; //return -1 on failure, 0 on success
+}
 
-  }
 
-
-int sendmesg(char *msg){
-  int len = strlen(msg); 
+int sendmesg(){
+  int len = strlen(msg) + 1; 
 
   if (!fork()) {
     if (sendall(new_fd, msg, &len) == -1){
@@ -157,7 +163,14 @@ int sendmesg(char *msg){
   return 0;
 }
 
-void killinc(){
+void *sendmesgptr(){
+  //could do an if-else error structure here, but it's covered in sendmesg() already
+  sendmesg(msg);
+  return NULL;
+}
+
+//kill outgoing
+void killout(){
   close(sockfd);
   close(new_fd);
 }
