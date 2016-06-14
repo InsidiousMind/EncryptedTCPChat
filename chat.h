@@ -13,10 +13,20 @@ void killout();
 
 //client.c
 void *initclientptr();
-void sethost(char *buf);
 void killinc();
 void setcuser(char *buf);
 
 //mainthread
 void *mainthreadptr();
 void setuser(char *buf);
+
+
+
+void setuser(char *buf){
+  username = buf;
+}
+
+void sethost(char *buf){
+  hostname = buf;
+}
+
