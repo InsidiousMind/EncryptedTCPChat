@@ -158,15 +158,17 @@ int main(int argc, char *argv[])
   
    if(FD_ISSET(master_socket, &readfds))
    {
-    if(new_socket = accept(master_socket, (struct sockaddr*)&their_addr,&sin_size)<0)
-    {
-      perror("[!!] accept error");
-      exit(EXIT_FAILURE);
-    }
+    
+     new_socket = accept(master_socket, (struct sockaddr*)&their_addr,&sin_size);
+     
+     if(new_socket == -1){
+      perror("[!!] Could not Accept");
+      continue;
+     }
    
    }
     printf("New Connection, socket fd is %d, ip is: %s, port: %d \n", new_socket, inet_ntop(their_addr.ss_family,
-          get_in_addr((struct sockaddr *)&their_addr),s,sizeof(s)), ntohs(address.sin_port));
+          get_in_addr((struct sockaddr *) &their_addr), s, sizeof s));
 
     //might need htis (network to printable);
   /*  inet_ntop(their_addr.ss_family,
@@ -216,7 +218,11 @@ int main(int argc, char *argv[])
 
 
 }
-/*
+/* //play with these to send data to clients
+ *
+ * 'send all' b/c kernel may not send all bytes over the network
+ * that is out of our control, but we need to make s ure everything makes it over
+ *
 //sometimes not all of the data sends >.< ....
 int sendall(int s, char *buf, int *len){
   int total = 0;
