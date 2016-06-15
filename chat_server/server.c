@@ -18,12 +18,11 @@
 
 #define BACKLOG 10 // # of pending conn queue will hold
 
-#define NUM_THREADS 2
 
 
 int opt = TRUE;
 
-int master_socket, addrlen, new_socket, client_socket[2], max_clients = 30, activity, 
+int master_socket, addrlen, new_socket, client_socket[30], max_clients = 30, activity, 
     i, valread, sd;
 
 int max_sd;
@@ -57,167 +56,178 @@ void *get_in_addr(struct sockaddr *sa){
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(int argc, char *argv[])
+uint16_t get_in_port(struct sockaddr *sa)
 {
- 
+  return (((struct sockaddr_in*)sa) ->sin_port);
+}
 
-
-  memset(&hints, 0, sizeof(hints)); //zero the struct
-  hints.ai_family = AF_UNSPEC;    //set the type of connection to IPv4/6
-  hints.ai_socktype = SOCK_STREAM;  //TCP stream sockets
-  hints.ai_flags = AI_PASSIVE;    //fill in IP for me
-
-
-
-  fd_set readfds;
-
-  char *message = "ECHO Daemon v1.0 \r\n";
-
-  //init client socket to 0 so not checked
-  for(i = 0; i < max_clients; i++){
-    client_socket[i] = 0;
-  }
-
-  //create master socket 
-  if((master_socket = socket(AF_UNSPEC, SOCK_STREAM, 0)) == 0)
+  int main(int argc, char *argv[])
   {
-    perror("[!!] socket failed");
-    exit(EXIT_FAILURE);
-  }
+   
 
-  //set master socket to allow multiple connections
-  //(will work w/o this is a safegaurd
-  
 
-  //get addr info
-  if((address_info = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0){
-    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(address_info));
-    return 1; 
-  }
+    memset(&hints, 0, sizeof(hints)); //zero the struct
+    hints.ai_family = AF_UNSPEC;    //set the type of connection to IPv4/6
+    hints.ai_socktype = SOCK_STREAM;  //TCP stream sockets
+    hints.ai_flags = AI_PASSIVE;    //fill in IP for me
 
-  //loop through results and bind to first we can
-  for(p = servinfo; p != NULL; p = p -> ai_next){
-    if((master_socket = socket(p->ai_family, p->ai_socktype,   //get a socket desc
-          p->ai_protocol)) == -1){
-            perror("[!ERROR!!] server: socket");
-           continue;
+
+
+    fd_set readfds;
+
+    char *message = "ECHO Daemon v1.0 \r\n";
+
+    //init client socket to 0 so not checked
+    for(i = 0; i < max_clients; i++){
+      client_socket[i] = 0;
     }
-  
-    if(setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt,
-                  sizeof(opt))<0)
+
+    //create master socket 
+    if((master_socket = socket(AF_UNSPEC, SOCK_STREAM, 0)) == 0)
     {
-      perror("[!!] setsockopt");
+      perror("[!!] socket failed");
       exit(EXIT_FAILURE);
     }
 
-    if(bind(master_socket, p->ai_addr,p->ai_addrlen) == -1){   //bind to it
-      close(master_socket);
-      perror("[!ERROR!] server bind failed");
-      continue;
+    //set master socket to allow multiple connections
+    //(will work w/o this is a safegaurd
+    
+
+    //get addr info
+    if((address_info = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0){
+      fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(address_info));
+      return 1; 
     }
 
-    break;
-  
-  }
-
-  freeaddrinfo(servinfo);
-  //reached the end of the LL :'(
-  if (p == NULL){
-    fprintf(stderr, "[!!!] Server: failed to bind\n");
-    exit(1); 
-  }
-
-  if(listen(master_socket, BACKLOG) == -1){
-    perror("listen");
-    exit(EXIT_FAILURE);
-  }
-
-
-  printf("[server] establishing connection...\n");
-  
-  
-  while(TRUE){
-    
-    sin_size = sizeof their_addr;
-    FD_ZERO(&readfds);
-    FD_SET(master_socket, &readfds);
-    max_sd = master_socket;
-    
-    //add child sockets to set
-    for(i = 0; i < max_clients; i++){
-      sd = client_socket[i];
-      //if valid socket desc add to read list
-      if(sd > 0) FD_SET(sd, &readfds);
-      //highest file desc #, need it for select func
-      if(sd > max_sd) max_sd = sd;
-    }
-   //wait for activity on one of the sockets, timeout NULL, so this will wait..foreverr 0.0
-   activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-
-   if((activity < 0) && (errno!=EINTR)) printf("[!!] select error");
-  
-   if(FD_ISSET(master_socket, &readfds))
-   {
-    
-     new_socket = accept(master_socket, (struct sockaddr*)&their_addr,&sin_size);
-     
-     if(new_socket == -1){
-      perror("[!!] Could not Accept");
-      continue;
-     }
-   
-   }
-    printf("New Connection, socket fd is %d, ip is: %s, port: %d \n", new_socket, inet_ntop(their_addr.ss_family,
-          get_in_addr((struct sockaddr *) &their_addr), s, sizeof s));
-
-    //might need htis (network to printable);
-  /*  inet_ntop(their_addr.ss_family,
-              get_in_addr((struct sockaddr *)&their_addr), //get incoming address
-              s, sizeof s); */
-  //printf("server: new connection from %s\n", s);
-
-    if(send(new_socket, message, strlen(message), 0) != strlen(message)){
-      perror("[!!] send");
-    }
-    puts("Welcome message sent successfully");
-
-    for(i = 0; i < max_clients; i++){
-      if(client_socket[i] == 0){
-        client_socket[i] = new_socket;
-        printf("Adding to list of sockets as %d\n",i);
-        break;
+    //loop through results and bind to first we can
+    for(p = servinfo; p != NULL; p = p -> ai_next){
+      if((master_socket = socket(p->ai_family, p->ai_socktype,   //get a socket desc
+            p->ai_protocol)) == -1){
+              perror("[!ERROR!!] server: socket");
+             continue;
       }
-    }
-  } 
-
-  for (i = 0; i < max_clients; i++)
-  {
-    sd = client_socket[i];
-
-    if(FD_ISSET(sd,&readfds))
-    {
-      //check if it was for closing, also read inc msg
-      if ((valread = read(sd, buffer, 1024)) == 0)
+    
+      if(setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char*)&opt,
+                    sizeof(opt))<0)
       {
-        //somebody d/ced get deets and p
-        getpeername(sd,(struct sockaddr*)&their_addr, (&sin_size));
-        
-        printf("Host disconnected, ip %s , port %d \n", inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr),s,sizeof(s)));
+        perror("[!!] setsockopt");
+        exit(EXIT_FAILURE);
+      }
 
-        close (sd);
-        client_socket[i] = 0;
-      }else{
-        //set string terminating NULL byte on end of data read
-        buffer[valread] = '\0';
-        send(sd, buffer, strlen(buffer), 0);
+      if(bind(master_socket, p->ai_addr,p->ai_addrlen) == -1){   //bind to it
+        close(master_socket);
+        perror("[!ERROR!] server bind failed");
+        continue;
+      }
+
+      break;
+    
+    }
+
+    freeaddrinfo(servinfo);
+    //reached the end of the LL :'(
+    if (p == NULL){
+      fprintf(stderr, "[!!!] Server: failed to bind\n");
+      exit(1); 
+    }
+
+    if(listen(master_socket, BACKLOG) == -1){
+      perror("listen");
+      exit(EXIT_FAILURE);
+    }
+
+
+    printf("[server] establishing connection...\n");
+    
+    
+    while(TRUE){
       
+      sin_size = sizeof their_addr;
+      FD_ZERO(&readfds);
+      FD_SET(master_socket, &readfds);
+      max_sd = master_socket;
+      
+      //add child sockets to set
+      for(i = 0; i < max_clients; i++){
+        sd = client_socket[i];
+        //if valid socket desc add to read list
+        if(sd > 0) FD_SET(sd, &readfds);
+        //highest file desc #, need it for select func
+        if(sd > max_sd) max_sd = sd;
+      }
+     //wait for activity on one of the sockets, timeout NULL, so this will wait..foreverr 0.0
+     activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+     if((activity < 0) && (errno!=EINTR)) printf("[!!] select error");
+    
+     if(FD_ISSET(master_socket, &readfds))
+     {
+       
+       new_socket = accept(master_socket, (struct sockaddr*)&their_addr,&sin_size);
+       
+       if(new_socket == -1){
+         perror("[!!] Could not Accept");
+         continue;
+       }
+       
+        
+       printf("New Connection, socket fd is %d, ip is: %s, port: %d \n",new_socket, 
+                                                                        inet_ntop(their_addr.ss_family,
+                                                                        get_in_addr((struct sockaddr *) &their_addr), 
+                                                                        s, 
+                                                                        sizeof s),
+                                                                        htons(get_in_port((struct sockaddr *)&their_addr)));
+      
+       
+       if(send(new_socket, message, strlen(message), 0) != strlen(message))
+       {
+        perror("[!!] send");
+       }
+       puts("Welcome message sent successfully");
+      
+       for(i = 0; i < max_clients; i++)
+       {
+         if(client_socket[i] == 0)
+         {
+           client_socket[i] = new_socket;
+           printf("Adding to list of sockets as %d\n",i);
+           break;
+         }
+       }
+     } 
+
+    for (i = 0; i < max_clients; i++)
+    {
+      sd = client_socket[i];
+
+      if(FD_ISSET(sd,&readfds))
+      {
+        //check if it was for closing, also read inc msg
+        if ((valread = read(sd, buffer, 1024)) == 0)
+        {
+          //somebody d/ced get deets and p
+          getpeername(sd,(struct sockaddr*)&their_addr, (&sin_size));
+          
+          printf("Host disconnected, ip %s, port %d \n", inet_ntop(their_addr.ss_family,
+                                                         get_in_addr((struct sockaddr *)&their_addr),
+                                                                     s,
+                                                                     sizeof(s)), 
+                                                         htons(get_in_port((struct sockaddr *)&their_addr)));
+      
+          close (sd);
+          client_socket[i] = 0;
+        }else{
+          //set string terminating NULL byte on end of data read
+          buffer[valread] = '\0';
+          send(sd, buffer, strlen(buffer), 0);
+        }
       }
     }
-  
   }
 
-
+  return 0;
 }
+
 /* //play with these to send data to clients
  *
  * 'send all' b/c kernel may not send all bytes over the network
