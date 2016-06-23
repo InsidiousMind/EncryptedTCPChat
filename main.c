@@ -6,37 +6,48 @@
 #include <pthread.h>
 #include "chat.h"
 
-int main(int argc, char *argv[]){
- 
- 
- 
-  if( argc < 2 || argc > 3){
-    fprintf(stderr,"usage: 'TCPchat hostname [optional]username'\t\n");
-    exit(1);
-  }
-  if(argc == 3){
-    sethost(argv[1]);
-    setuser(argv[2]);  
-  }else{
-    sethost(argv[1]);
-    setuser("default");
-  }
-
-pthread_t tid1, tid2;
-
-pthread_create(&tid1, NULL, mainthreadptr, NULL);
-sleep(1);
-pthread_create(&tid2, NULL, initclientptr, NULL);
-
-printf("Closing Connection...\n");
-
-sleep(5);
-
-pthread_join(tid1,NULL);
-pthread_join(tid2,NULL);
+char *username;
+int retm = 0;
 
 
+void setuser(char *buf){
+  username = buf;
 }
 
+int main(int argc, char *argv){
+ 
+ char *msg; 
+ 
+ 
+ init_server();
 
+ while(1){
+    printf("%s%s", username, ": ");
+    msg = input();
 
+    if(strlen(msg) == 0){
+      setmsg("\n");
+    }
+    else if(strcmp(msg,"/exit") == 0){
+      free(msg);
+      killout();
+      pthread_exit(&retm);
+    }else{
+      char *newline = "\n";
+      msg = addchar(msg, newline);
+      setmsg(msg);
+      pthread_t tid;
+      pthread_create(&tid, NULL, sendmesgptr, NULL);
+      pthread_join(tid, NULL);
+    }
+    free(msg);
+
+  }
+ 
+ killout();
+ killinc();
+  
+}
+void *mainthreadptr(){
+  mainthread();  
+}

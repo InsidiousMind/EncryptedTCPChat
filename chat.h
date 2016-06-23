@@ -30,3 +30,30 @@ void sethost(char *buf){
   hostname = buf;
 }
 
+//An error-checked malloc() wrapper function
+void *ec_malloc(unsigned int size){
+  void *ptr;
+  ptr = malloc(size);
+  if(ptr == NULL)
+    fatal("in ec_malloc() on memory allocation");
+  return ptr;
+}
+
+void *ec_realloc(char* str, unsigned int size){
+  void *ptr;
+  ptr = realloc(str, size);
+  if(ptr == NULL)
+    fatal("in ec_realloc() on memory re-allocation");
+  return ptr;
+}
+
+//dest src
+void fatal(char *message){
+  char *error_message = "[!!] Fatal Error ";
+  strncat(error_message, message);
+  error_message[strlen(error_message)] = '\0';
+  perror(error_message);
+  exit(-1);
+}
+
+
